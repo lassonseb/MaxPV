@@ -708,6 +708,7 @@ void setup()
   // ***********************************************************************
   
   mqttClient.onConnect(onMqttConnect); // Appel de la fonction lors d'une connection MQTT établie
+  mqttClient.onDisconnect(onMqttDisconnect); // Appel de la fonction lors d'une deconnection MQTT
   mqttClient.onMessage(onMqttMessage); // Appel de la fonction lors de la réception d'un message MQTT
 
   // ***********************************************************************
@@ -1378,7 +1379,10 @@ void mqttTransmit(void)
     if (boostTime == -1) mqttClient.publish(MQTT_BOOST_MODE, 0, true, "off");
     else mqttClient.publish(MQTT_BOOST_MODE, 0, true, "on");
   }
-  else mqttClient.connect();        // Sinon on ne transmet pas mais on tente la reconnexion
+  else {
+  tcpClient.println(F("Services MQTT non connecté, tentative de reconnexion !"));
+  mqttClient.connect();        // Sinon on ne transmet pas mais on tente la reconnexion
+  }
 }
 
 void timeScheduler(void)
@@ -1397,8 +1401,15 @@ void timeScheduler(void)
   };
 }
 
+
+void onMqttDisconnect(AsyncMqttClientDisconnectReason reason) {
+  Serial.println("Disconnected from MQTT.");
+  tcpClient.println(F("Event : Services MQTT deconnecté !"));
+  //mqttReconnectTimer.once(2, connectToMqtt);
+}
 void onMqttConnect(bool sessionPresent) 
 {
+  tcpClient.println(F("Event : Services MQTT connecté !"));
   // Souscriptions aux topics pour gérer les états relais, SSR et boost
   mqttClient.subscribe(MQTT_SET_RELAY_MODE,0);
   mqttClient.subscribe(MQTT_SET_TRIAC_MODE,0);
